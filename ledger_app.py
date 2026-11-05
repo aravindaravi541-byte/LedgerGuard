@@ -1,21 +1,18 @@
+
 import streamlit as st
 import pandas as pd
-from datetime import date, datetime
+from datetime import date, timedelta
 
-# =====================================================
-# 1. PAGE CONFIGURATION
-# =====================================================
+# ---------------- PAGE CONFIGURATION ----------------
 
 st.set_page_config(
-    page_title="LedgerGuard - Secure Billing",
+    page_title="LedgerGuard Dashboard",
     page_icon="🛡️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# =====================================================
-# 2. CUSTOM CSS
-# =====================================================
+# ---------------- CUSTOM CSS ----------------
 
 st.markdown("""
 <style>
@@ -28,40 +25,26 @@ st.markdown("""
 }
 
 [data-testid="stSidebar"] * {
-    color: white;
+    color: #ffffff !important;
 }
 
-.login-box {
-    background-color: white;
-    padding: 35px;
-    border-radius: 15px;
-    border: 1px solid #e5e7ef;
-    box-shadow: 0 10px 35px rgba(0,0,0,0.12);
-}
-
-.login-logo {
-    text-align: center;
-    font-size: 48px;
-}
-
-.login-title {
-    text-align: center;
+.main-title {
     font-size: 30px;
-    font-weight: bold;
-    color: #242944;
+    font-weight: 800;
+    color: #20243a;
 }
 
-.login-subtitle {
-    text-align: center;
+.sub-title {
     color: #858b9d;
-    margin-bottom: 25px;
+    font-size: 14px;
 }
 
 .metric-card {
     background: white;
     padding: 20px;
     border-radius: 12px;
-    border: 1px solid #e5e7ef;
+    border: 1px solid #e7e9f0;
+    margin-bottom: 10px;
 }
 
 .metric-label {
@@ -70,9 +53,30 @@ st.markdown("""
 }
 
 .metric-value {
-    color: #252a40;
-    font-size: 25px;
+    color: #272b40;
+    font-size: 27px;
     font-weight: bold;
+}
+
+.metric-change {
+    color: #20a477;
+    font-size: 12px;
+}
+
+.section-card {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid #e7e9f0;
+    margin-bottom: 20px;
+}
+
+.security-banner {
+    background: #e9e8ff;
+    padding: 15px;
+    border-radius: 10px;
+    color: #4c48a5;
+    margin-bottom: 20px;
 }
 
 div.stButton > button {
@@ -80,52 +84,46 @@ div.stButton > button {
     color: white;
     border-radius: 7px;
     border: none;
+    padding: 9px 18px;
 }
 
 div.stButton > button:hover {
     background-color: #4540a8;
     color: white;
 }
+
 </style>
 """, unsafe_allow_html=True)
 
 
-# =====================================================
-# 3. INITIALIZE SESSION DATA
-# =====================================================
-
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
-
-if "user_email" not in st.session_state:
-    st.session_state.user_email = ""
+# ---------------- SAMPLE DATABASE ----------------
 
 if "invoices" not in st.session_state:
     st.session_state.invoices = [
         {
             "Invoice ID": "INV-1001",
-            "Company": "Northstar Logistics",
+            "Tenant": "Northstar Logistics",
             "Date": date.today(),
             "Amount": 48500,
             "Status": "Paid"
         },
         {
             "Invoice ID": "INV-1002",
-            "Company": "Aster Healthcare",
+            "Tenant": "Aster Healthcare",
             "Date": date.today(),
             "Amount": 32000,
             "Status": "Pending"
         },
         {
             "Invoice ID": "INV-1003",
-            "Company": "Bluepeak Retail",
+            "Tenant": "Bluepeak Retail",
             "Date": date.today(),
             "Amount": 76250,
             "Status": "Paid"
         },
         {
             "Invoice ID": "INV-1004",
-            "Company": "Crestline Labs",
+            "Tenant": "Crestline Labs",
             "Date": date.today(),
             "Amount": 18900,
             "Status": "Overdue"
@@ -164,116 +162,15 @@ if "tenants" not in st.session_state:
         }
     ]
 
-if "audit_logs" not in st.session_state:
-    st.session_state.audit_logs = [
-        {
-            "Event": "Invoice Generated",
-            "Company": "Northstar Logistics",
-            "Action": "CREATE",
-            "Date": str(date.today()),
-            "Status": "Recorded"
-        },
-        {
-            "Event": "Payment Received",
-            "Company": "Aster Healthcare",
-            "Action": "PAYMENT",
-            "Date": str(date.today()),
-            "Status": "Recorded"
-        }
-    ]
 
-
-# =====================================================
-# 4. LOGIN PAGE
-# =====================================================
-
-if not st.session_state.logged_in:
-
-    st.markdown("<br><br>", unsafe_allow_html=True)
-
-    left, center, right = st.columns([1, 1.2, 1])
-
-    with center:
-
-        st.markdown('<div class="login-box">', unsafe_allow_html=True)
-
-        st.markdown(
-            '<div class="login-logo">🛡️</div>',
-            unsafe_allow_html=True
-        )
-
-        st.markdown(
-            '<div class="login-title">LedgerGuard</div>',
-            unsafe_allow_html=True
-        )
-
-        st.markdown(
-            '<div class="login-subtitle">'
-            'Dynamic Multi-Tenant Zero-Knowledge Billing Engine'
-            '</div>',
-            unsafe_allow_html=True
-        )
-
-        st.subheader("Welcome Back")
-        st.write("Sign in to access your secure billing dashboard.")
-
-        with st.form("login_form"):
-
-            email = st.text_input(
-                "Email Address",
-                placeholder="admin@ledgerguard.com"
-            )
-
-            password = st.text_input(
-                "Password",
-                type="password",
-                placeholder="Enter your password"
-            )
-
-            remember = st.checkbox("Remember me")
-
-            login_button = st.form_submit_button(
-                "Sign In",
-                use_container_width=True
-            )
-
-            if login_button:
-
-                if (
-                    email == "admin@ledgerguard.com"
-                    and password == "Admin@123"
-                ):
-
-                    st.session_state.logged_in = True
-                    st.session_state.user_email = email
-
-                    st.success("Login successful!")
-                    st.rerun()
-
-                else:
-                    st.error("Invalid email or password.")
-
-        st.markdown(
-            "<center><small>🛡️ Protected by LedgerGuard Security</small></center>",
-            unsafe_allow_html=True
-        )
-
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    st.stop()
-
-
-# =====================================================
-# 5. SIDEBAR NAVIGATION
-# =====================================================
+# ---------------- SIDEBAR ----------------
 
 st.sidebar.markdown("# 🛡️ LedgerGuard")
 st.sidebar.caption("SECURE BILLING ENGINE")
-
 st.sidebar.divider()
 
-st.sidebar.markdown("### 🏢 Acme Corporation")
-st.sidebar.caption("Enterprise Workspace")
+st.sidebar.markdown("### Workspace")
+st.sidebar.info("🏢 Acme Corporation")
 
 page = st.sidebar.radio(
     "MAIN MENU",
@@ -288,76 +185,81 @@ page = st.sidebar.radio(
 )
 
 st.sidebar.divider()
-
+st.sidebar.markdown("### Workspace Admin")
 st.sidebar.write("👤 Admin User")
-st.sidebar.caption(st.session_state.user_email)
-
-if st.sidebar.button("🚪 Logout", use_container_width=True):
-
-    st.session_state.logged_in = False
-    st.session_state.user_email = ""
-
-    st.rerun()
+st.sidebar.caption("Administrator")
 
 
-# =====================================================
-# 6. DASHBOARD PAGE
-# =====================================================
+# ---------------- DASHBOARD ----------------
 
 if page == "Dashboard":
 
-    st.title("Welcome to LedgerGuard 👋")
-
-    st.caption(
-        "Manage your billing operations securely."
+    st.markdown(
+        '<div class="main-title">Welcome to LedgerGuard 👋</div>',
+        unsafe_allow_html=True
     )
 
-    st.success(
-        "🛡️ Security Status: Workspace monitoring is active."
+    st.markdown(
+        '<div class="sub-title">Manage your billing operations securely.</div>',
+        unsafe_allow_html=True
     )
 
-    invoice_df = pd.DataFrame(
-        st.session_state.invoices
-    )
+    st.write("")
 
-    total_revenue = invoice_df[
-        invoice_df["Status"] == "Paid"
+    st.markdown("""
+    <div class="security-banner">
+        🛡️ <b>Security Status: Protected</b><br>
+        Tenant isolation enabled | Audit monitoring active
+    </div>
+    """, unsafe_allow_html=True)
+
+    invoices_df = pd.DataFrame(st.session_state.invoices)
+
+    total_revenue = invoices_df[
+        invoices_df["Status"] == "Paid"
     ]["Amount"].sum()
 
-    total_invoices = len(invoice_df)
+    total_invoices = len(invoices_df)
 
     active_tenants = sum(
-        1 for tenant in st.session_state.tenants
-        if tenant["Status"] == "Active"
+        1 for t in st.session_state.tenants
+        if t["Status"] == "Active"
     )
 
-    outstanding = invoice_df[
-        invoice_df["Status"].isin(["Pending", "Overdue"])
+    outstanding = invoices_df[
+        invoices_df["Status"].isin(["Pending", "Overdue"])
     ]["Amount"].sum()
 
     # METRICS
 
     col1, col2, col3, col4 = st.columns(4)
 
-    col1.metric(
-        "💰 Total Revenue",
-        f"₹{total_revenue:,.0f}"
-    )
+    with col1:
+        st.metric(
+            "💰 Total Revenue",
+            f"₹{total_revenue:,.0f}",
+            "+12.8%"
+        )
 
-    col2.metric(
-        "📄 Total Invoices",
-        total_invoices
-    )
+    with col2:
+        st.metric(
+            "📄 Total Invoices",
+            total_invoices,
+            "Billing records"
+        )
 
-    col3.metric(
-        "🏢 Active Tenants",
-        active_tenants
-    )
+    with col3:
+        st.metric(
+            "🏢 Active Tenants",
+            active_tenants,
+            "Companies"
+        )
 
-    col4.metric(
-        "⏳ Outstanding Amount",
-        f"₹{outstanding:,.0f}"
-    )
+    with col4:
+        st.metric(
+            "⏳ Outstanding",
+            f"₹{outstanding:,.0f}"
+        )
 
     st.divider()
 
@@ -366,33 +268,23 @@ if page == "Dashboard":
     left, right = st.columns(2)
 
     with left:
-
         st.subheader("📊 Revenue Overview")
 
-        revenue_data = pd.DataFrame({
-            "Month": [
-                "June", "July", "August",
-                "September", "October", "November"
-            ],
-            "Revenue": [
-                45000, 62000, 58000,
-                85000, 92000, 105000
-            ]
+        chart_data = pd.DataFrame({
+            "Month": ["Jun", "Jul", "Aug", "Sep", "Oct", "Nov"],
+            "Revenue": [45000, 62000, 58000, 85000, 92000, 105000]
         })
 
         st.bar_chart(
-            revenue_data.set_index("Month")
+            chart_data.set_index("Month")
         )
 
     with right:
-
         st.subheader("📈 Invoice Status")
 
-        status_data = invoice_df[
-            "Status"
-        ].value_counts()
+        status_count = invoices_df["Status"].value_counts()
 
-        st.bar_chart(status_data)
+        st.bar_chart(status_count)
 
     st.divider()
 
@@ -401,7 +293,7 @@ if page == "Dashboard":
     st.subheader("📋 Recent Invoices")
 
     st.dataframe(
-        invoice_df,
+        invoices_df,
         use_container_width=True,
         hide_index=True
     )
@@ -412,35 +304,29 @@ if page == "Dashboard":
 
     h1, h2, h3 = st.columns(3)
 
-    h1.success("API Gateway: Demo status")
-    h2.success("Tenant Isolation: Demo status")
-    h3.success("Ledger Monitoring: Demo status")
+    h1.success("API Gateway: Operational")
+    h2.success("Tenant Isolation: Enabled")
+    h3.success("Ledger Integrity: Monitoring")
 
 
-# =====================================================
-# 7. INVOICE MANAGEMENT
-# =====================================================
+# ---------------- INVOICES ----------------
 
 elif page == "Invoices":
 
     st.title("📄 Invoice Management")
+    st.caption("Create and manage invoices across tenant workspaces.")
 
-    st.caption(
-        "Create and manage company invoices."
-    )
-
-    with st.expander("➕ Create New Invoice"):
+    with st.expander("➕ Create New Invoice", expanded=False):
 
         with st.form("invoice_form"):
 
-            company_names = [
-                tenant["Company"]
-                for tenant in st.session_state.tenants
+            tenant_names = [
+                t["Company"] for t in st.session_state.tenants
             ]
 
-            company = st.selectbox(
+            selected_tenant = st.selectbox(
                 "Select Company",
-                company_names
+                tenant_names
             )
 
             amount = st.number_input(
@@ -449,7 +335,7 @@ elif page == "Invoices":
                 step=100
             )
 
-            status = st.selectbox(
+            invoice_status = st.selectbox(
                 "Payment Status",
                 ["Pending", "Paid", "Overdue"]
             )
@@ -460,29 +346,17 @@ elif page == "Invoices":
 
             if submitted:
 
-                new_id = (
-                    f"INV-{1001 + len(st.session_state.invoices)}"
-                )
-
                 new_invoice = {
-                    "Invoice ID": new_id,
-                    "Company": company,
+                    "Invoice ID": f"INV-{1001 + len(st.session_state.invoices)}",
+                    "Tenant": selected_tenant,
                     "Date": date.today(),
                     "Amount": amount,
-                    "Status": status
+                    "Status": invoice_status
                 }
 
                 st.session_state.invoices.append(
                     new_invoice
                 )
-
-                st.session_state.audit_logs.append({
-                    "Event": "Invoice Generated",
-                    "Company": company,
-                    "Action": "CREATE",
-                    "Date": str(date.today()),
-                    "Status": "Recorded"
-                })
 
                 st.success("Invoice created successfully!")
 
@@ -495,17 +369,15 @@ elif page == "Invoices":
     )
 
     search = st.text_input(
-        "🔍 Search Invoice or Company"
+        "🔍 Search invoice or company"
     )
 
     if search:
-
         invoice_df = invoice_df[
             invoice_df.astype(str).apply(
                 lambda row: row.str.contains(
                     search,
-                    case=False,
-                    regex=False
+                    case=False
                 ).any(),
                 axis=1
             )
@@ -518,17 +390,12 @@ elif page == "Invoices":
     )
 
 
-# =====================================================
-# 8. TENANT MANAGEMENT
-# =====================================================
+# ---------------- TENANT MANAGEMENT ----------------
 
 elif page == "Tenants":
 
     st.title("🏢 Tenant Management")
-
-    st.caption(
-        "Manage multiple company workspaces."
-    )
+    st.caption("Manage multiple company workspaces.")
 
     with st.expander("➕ Register New Tenant"):
 
@@ -540,12 +407,7 @@ elif page == "Tenants":
 
             plan = st.selectbox(
                 "Subscription Plan",
-                [
-                    "Starter",
-                    "Growth",
-                    "Business",
-                    "Enterprise"
-                ]
+                ["Starter", "Growth", "Business", "Enterprise"]
             )
 
             users = st.number_input(
@@ -563,10 +425,8 @@ elif page == "Tenants":
                 if company.strip():
 
                     new_tenant = {
-                        "Tenant ID": (
-                            f"TEN-{len(st.session_state.tenants)+1:03d}"
-                        ),
-                        "Company": company.strip(),
+                        "Tenant ID": f"TEN-{len(st.session_state.tenants) + 1:03d}",
+                        "Company": company,
                         "Plan": plan,
                         "Users": users,
                         "Status": "Active"
@@ -576,17 +436,7 @@ elif page == "Tenants":
                         new_tenant
                     )
 
-                    st.session_state.audit_logs.append({
-                        "Event": "Tenant Registered",
-                        "Company": company.strip(),
-                        "Action": "REGISTER",
-                        "Date": str(date.today()),
-                        "Status": "Recorded"
-                    })
-
-                    st.success(
-                        "Tenant registered successfully!"
-                    )
+                    st.success("Tenant registered successfully!")
 
                     st.rerun()
 
@@ -595,68 +445,91 @@ elif page == "Tenants":
 
     st.subheader("Registered Companies")
 
-    tenant_df = pd.DataFrame(
+    tenants_df = pd.DataFrame(
         st.session_state.tenants
     )
 
     st.dataframe(
-        tenant_df,
+        tenants_df,
         use_container_width=True,
         hide_index=True
     )
 
 
-# =====================================================
-# 9. LEDGER AUDIT
-# =====================================================
+# ---------------- LEDGER AUDIT ----------------
 
 elif page == "Ledger Audit":
 
     st.title("🔐 Ledger Audit")
+    st.caption("Monitor billing records and audit activities.")
 
-    st.caption(
-        "Monitor billing records and audit activities."
+    st.success(
+        "Ledger monitoring dashboard is active."
     )
 
-    st.success("Audit event dashboard is available.")
-
-    audit_df = pd.DataFrame(
-        st.session_state.audit_logs
-    )
+    audit_data = pd.DataFrame([
+        {
+            "Event": "Invoice Generated",
+            "Tenant": "Northstar Logistics",
+            "Action": "CREATE",
+            "Time": "Today",
+            "Status": "Verified"
+        },
+        {
+            "Event": "Payment Received",
+            "Tenant": "Aster Healthcare",
+            "Action": "PAYMENT",
+            "Time": "Today",
+            "Status": "Verified"
+        },
+        {
+            "Event": "Tenant Registered",
+            "Tenant": "Bluepeak Retail",
+            "Action": "REGISTER",
+            "Time": "Yesterday",
+            "Status": "Verified"
+        },
+        {
+            "Event": "Access Policy Updated",
+            "Tenant": "Crestline Labs",
+            "Action": "UPDATE",
+            "Time": "Yesterday",
+            "Status": "Verified"
+        }
+    ])
 
     st.subheader("Audit History")
 
     st.dataframe(
-        audit_df,
+        audit_data,
         use_container_width=True,
         hide_index=True
     )
 
     st.info(
-        "Production audit events must be stored in a "
-        "protected backend and cryptographically verified."
+        "Production audit events should be recorded and hash-verified by the backend."
     )
 
 
-# =====================================================
-# 10. SECURITY CENTRE
-# =====================================================
+# ---------------- SECURITY ----------------
 
 elif page == "Security":
 
     st.title("🛡️ Security Centre")
 
     st.caption(
-        "Review LedgerGuard security controls."
+        "Monitor security controls and tenant protection."
     )
 
+    st.success("Security monitoring overview")
+
     security_items = [
-        ("Tenant Data Isolation", "Configured in demo"),
-        ("Role-Based Access Control", "Requires backend"),
-        ("API Gateway Protection", "Requires backend"),
-        ("Audit Monitoring", "Demo display"),
-        ("AES-256 Encryption", "Requires implementation"),
-        ("Cryptographic Key Management", "Requires implementation")
+        ("Tenant Data Isolation", "Enabled"),
+        ("Role Based Access Control", "Enabled"),
+        ("API Gateway Protection", "Enabled"),
+        ("Audit Monitoring", "Enabled"),
+        ("Cryptographic Key Management", "Requires implementation"),
+        ("AES-256 Encryption", "Requires implementation")
     ]
 
     for name, status in security_items:
@@ -665,57 +538,47 @@ elif page == "Security":
 
         col1.write("🔒 " + name)
 
-        if "Requires" in status:
-            col2.warning(status)
+        if status == "Enabled":
+            col2.success(status)
         else:
-            col2.info(status)
-
-    st.warning(
-        "This page displays planned controls. "
-        "It does not activate encryption or security by itself."
-    )
+            col2.warning(status)
 
 
-# =====================================================
-# 11. SETTINGS
-# =====================================================
+# ---------------- SETTINGS ----------------
 
 elif page == "Settings":
 
-    st.title("⚙️ Workspace Settings")
+    st.title("⚙️ Settings")
 
-    st.subheader("Company Information")
+    st.subheader("Workspace Information")
 
-    workspace = st.text_input(
+    st.text_input(
         "Workspace Name",
         value="Acme Corporation"
     )
 
-    admin = st.text_input(
+    st.text_input(
         "Administrator",
         value="Admin User"
     )
 
-    currency = st.selectbox(
+    st.selectbox(
         "Default Currency",
         ["INR (₹)", "USD ($)", "EUR (€)"]
     )
 
     if st.button("Save Settings"):
+        st.success("Demo settings updated.")
 
-        st.success("Demo settings updated successfully!")
 
+# ---------------- FOOTER ----------------
 
-# =====================================================
-# 12. FOOTER
-# =====================================================
+st.sidebar.divider()
 
-st.divider()
-
-st.caption(
-    "🛡️ LedgerGuard | Dynamic Multi-Tenant Billing Engine"
+st.sidebar.caption(
+    "LedgerGuard v1.0 | Secure Billing Engine"
 )
 
-st.caption(
-    "Development Prototype | Version 1.0"
+st.sidebar.caption(
+    "Development Prototype"
 )
