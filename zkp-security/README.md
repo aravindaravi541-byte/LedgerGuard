@@ -119,18 +119,42 @@ by their transactional database with an atomic consume operation.
 
 ## Security limitations
 
-- The elliptic-curve arithmetic and proof protocols are custom pure Python.
-  They have not received independent cryptographic review, formal verification,
-  side-channel analysis, or production certification.
-- Python big-integer operations are not constant-time. Do not treat this code
-  as resistant to local timing/cache side channels.
-- The implementation does not prove invoice authenticity by itself. A trusted
-  backend record or authenticated reference is required; external auditors
-  need that reference and an appropriate trust policy.
-- Proof validity and reference equality do not replace backend authentication,
-  tenant authorization, idempotent business processing, secure deployment, or
-  key-rotation procedures.
-- For production, evaluate migration to an independently reviewed ZKP stack
-  (for example arkworks/Halo2, Circom/snarkjs, or a suitable audited
-  Bulletproofs implementation). This package currently uses no external ZKP
-  library and makes no claim that its custom protocols are production-secure.
+- The module includes a native Rust-based Groth16 implementation using arkworks over BLS12-381, alongside legacy custom Python cryptographic components. The native implementation does not yet fully replace the existing Python-based billing proof workflow.
+
+- The legacy Python elliptic-curve arithmetic and custom proof protocols have not received independent cryptographic review or formal verification. Python big-integer operations are not guaranteed to execute in constant time and may expose timing or other implementation-level side channels.
+
+- The native Rust implementation has undergone security hardening, including bounded proof and key deserialization, public-input validation, circuit item-count enforcement, improved error handling, and OS-backed randomness. However, these improvements do not establish constant-time execution or independently verified cryptographic security.
+
+- The complete native proving and verification execution paths have not been established to provide constant-time behavior. Potential timing and side-channel considerations remain around Groth16 operations, witness-dependent circuit construction, memory allocation, serialization, deserialization, and Python/PyO3 runtime boundaries.
+
+- The implementation has not undergone an independent cryptographic audit, formal verification, comprehensive side-channel assessment, or production security certification. Automated test results alone do not establish these guarantees.
+
+- Groth16 relies on trusted-setup assumptions. Production deployment requires an appropriately conducted and documented setup process, secure proving-key handling, verification-key integrity, and defined key lifecycle and rotation procedures. The production readiness of these processes has not been independently established.
+
+- Proof validity does not independently establish invoice authenticity. A trusted backend record or authenticated invoice reference, together with an appropriate verification and trust policy, is required to establish the authenticity of the underlying business data.
+
+- Proof validity, transcript binding, and trusted-reference comparison do not replace backend authentication, tenant authorization, idempotent business processing, secure deployment, or appropriate access control.
+
+- Local SQLite-based replay protection and cross-instance replay checks are implemented and tested. However, durable, coordinated replay protection across multiple hosts or distributed application instances requires an appropriate shared backend or persistent coordination mechanism.
+
+- The native implementation must preserve the existing billing workflow's privacy and security semantics, including confidential monetary values, tenant binding, invoice-reference binding, timestamp binding, and replay protection, before it can fully replace the legacy BillingProver/BillingVerifier workflow.
+
+## Limitation status
+
+- **Implemented and tested:** Strict point/scalar validation, transcript binding, canonical invoice serialization, trusted-reference comparison, replay checks, and bounded proof parsing have been implemented or improved and are covered by automated tests.
+
+- **Native ZKP implementation:** A Rust-based Groth16 proof engine using arkworks over BLS12-381, PyO3 bindings, versioned proof-envelope serialization, and benchmark tooling have been implemented.
+
+- **Native security hardening:** Proof and key deserialization limits, public-input validation, empty-proof rejection, circuit item-count enforcement, generic native error handling, and OS-backed randomness have been implemented or improved.
+
+- **Test status:** The reported Python test suite passes with 147 tests, and the native Rust test suite passes with 3 tests. These results demonstrate automated test coverage, not independent cryptographic assurance.
+
+- **Billing API migration:** Full migration of the existing BillingProver/BillingVerifier APIs to the native implementation remains incomplete. The native circuit and integration must preserve confidential invoice monetary values and all existing tenant, invoice-reference, timestamp, and replay bindings before this migration can be considered complete.
+
+- **Constant-time security:** Complete constant-time execution has not been established. Legacy Python arithmetic, native Groth16 operations, circuit construction, memory allocation, serialization, and Python/PyO3 runtime behavior require further assessment and independent specialist review.
+
+- **Independent assurance:** Independent cryptographic review, formal verification, comprehensive side-channel assessment, and production security certification remain outstanding.
+
+- **Backend and deployment integration:** Invoice authenticity, backend authentication, tenant authorization, durable multi-host replay protection, idempotent business processing, production key management, and secure deployment require appropriate backend and operational integration.
+
+- **Framework migration:** Migration to an established native ZKP framework has been partially implemented using arkworks Groth16. The native implementation is not yet a complete replacement for the legacy billing proof workflow. See [`docs/FRAMEWORK_EVALUATION.md`](docs/FRAMEWORK_EVALUATION.md).

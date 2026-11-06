@@ -330,13 +330,22 @@ class ProofSerializer:
 
     @staticmethod
     def bytes_to_b64(b: bytes) -> str:
+        if not isinstance(b, bytes):
+            raise TypeError("Binary proof values must be bytes.")
         return base64.b64encode(b).decode()
 
     @staticmethod
     def b64_to_bytes(s: str) -> bytes:
         if not isinstance(s, str):
             raise ValueError("Base64 value must be a string.")
-        return base64.b64decode(s.encode("ascii"), validate=True)
+        try:
+            encoded = s.encode("ascii")
+            decoded = base64.b64decode(encoded, validate=True)
+        except (UnicodeEncodeError, ValueError, base64.binascii.Error) as exc:
+            raise ValueError("Base64 value is malformed.") from exc
+        if len(decoded) > 4096 or base64.b64encode(decoded).decode("ascii") != s:
+            raise ValueError("Base64 value is noncanonical or oversized.")
+        return decoded
 
     @classmethod
     def serialise_schnorr(cls, proof) -> dict[str, Any]:  # type: ignore[override]

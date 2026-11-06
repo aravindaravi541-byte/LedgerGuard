@@ -12,6 +12,8 @@ Tests cover:
 """
 
 import sys, os, json, base64, time
+from pathlib import Path
+from uuid import uuid4
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import pytest
@@ -139,12 +141,17 @@ class TestReplayAttackPrevention:
         time.sleep(1.05)
         assert not store.consume(token, "tenant-a", "INV-A")
 
-    def test_shared_sqlite_challenge_store_works_across_instances(self, tmp_path):
-        database = str(tmp_path / "replay.sqlite3")
-        issuer = SQLiteChallengeStore(database)
-        verifier_store = SQLiteChallengeStore(database)
-        token, _ = issuer.issue("tenant-a", "INV-A")
-        assert verifier_store.consume(token, "tenant-a", "INV-A")
+    def test_shared_sqlite_challenge_store_works_across_instances(self):
+        database_path = Path(__file__).parent / f"replay-{uuid4().hex}.sqlite3"
+        database = str(database_path)
+        try:
+            issuer = SQLiteChallengeStore(database)
+            verifier_store = SQLiteChallengeStore(database)
+            token, _ = issuer.issue("tenant-a", "INV-A")
+            assert verifier_store.consume(token, "tenant-a", "INV-A")
+        finally:
+            for path in (database_path, Path(f"{database}-wal"), Path(f"{database}-shm")):
+                path.unlink(missing_ok=True)
 
     def test_concurrent_replay_has_exactly_one_success(self):
         from concurrent.futures import ThreadPoolExecutor
@@ -329,6 +336,21 @@ class TestDoSResilience:
     def test_duplicate_serialized_proof_fields_are_rejected(self):
         with pytest.raises(ValueError, match="Duplicate JSON keys"):
             InvoiceProof.from_json('{"proof_version":"2.0","proof_version":"2.0"}')
+
+    def test_noncanonical_base64_is_rejected(self):
+        from src.crypto_utils import ProofSerializer
+
+        with pytest.raises(ValueError, match="noncanonical"):
+            ProofSerializer.b64_to_bytes("YR==")
+        with pytest.raises(ValueError, match="malformed"):
+            ProofSerializer.b64_to_bytes("not-base64")
+
+    def test_oversized_nested_binary_field_is_rejected(self):
+        from src.crypto_utils import ProofSerializer
+
+        oversized = base64.b64encode(b"x" * 4097).decode()
+        with pytest.raises(ValueError, match="oversized"):
+            ProofSerializer.b64_to_bytes(oversized)
 
     def test_proof_with_null_commitments_does_not_crash(self):
         """Ensure verifier returns is_valid=False (not an unhandled exception)."""
