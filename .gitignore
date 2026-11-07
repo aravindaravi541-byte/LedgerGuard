@@ -1,0 +1,19 @@
+# Rust build artifacts
+**/target/
+
+# Python cache
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Build artifacts
+build/
+dist/
+*.whl
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
