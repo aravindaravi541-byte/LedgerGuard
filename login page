@@ -1,0 +1,57 @@
+# Login page
+if not st.session_state.logged_in:
+    st.markdown("<br><br>", unsafe_allow_html=True)
+
+    left, center, right = st.columns([1, 1.2, 1])
+
+    with center:
+        st.markdown('<div class="login-box">', unsafe_allow_html=True)
+        st.markdown('<div class="login-logo">🛡️</div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="login-title">LedgerGuard</div>',
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            '<div class="login-subtitle">'
+            'Dynamic Multi-Tenant Zero-Knowledge Billing Engine'
+            '</div>',
+            unsafe_allow_html=True,
+        )
+
+        st.subheader("Welcome Back")
+        st.write("Sign in to access your secure billing dashboard.")
+
+        with st.form("login_form"):
+            email = st.text_input(
+                "Email Address",
+                placeholder="admin@ledgerguard.com",
+            )
+            password = st.text_input(
+                "Password",
+                type="password",
+                placeholder="Enter your password",
+            )
+            remember = st.checkbox("Remember me")
+
+            login_button = st.form_submit_button(
+                "Sign In",
+                use_container_width=True,
+            )
+
+            if login_button:
+                # Demo credentials only—replace with backend authentication.
+                if email == "admin@ledgerguard.com" and password == "Admin@123":
+                    st.session_state.logged_in = True
+                    st.session_state.user_email = email
+                    st.success("Login successful!")
+                    st.rerun()
+                else:
+                    st.error("Invalid email or password.")
+
+        st.markdown(
+            "<center><small>🛡️ Protected by LedgerGuard Security</small></center>",
+            unsafe_allow_html=True,
+        )
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    st.stop()
