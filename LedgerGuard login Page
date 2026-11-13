@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LedgerGuard Billing Portal</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial, sans-serif;
+}
+
+body{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    min-height:100vh;
+    background:linear-gradient(135deg,#0f172a,#1e40af);
+}
+
+.container{
+    width:900px;
+    background:white;
+    border-radius:15px;
+    overflow:hidden;
+    display:flex;
+    box-shadow:0 10px 30px rgba(0,0,0,0.3);
+}
+
+.left{
+    width:40%;
+    background:linear-gradient(135deg,#2563eb,#06b6d4);
+    color:white;
+    padding:50px 30px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+}
+
+.left h1{
+    font-size:36px;
+    margin-bottom:10px;
+}
+
+.right{
+    width:60%;
+    padding:40px;
+}
+
+.tabs{
+    display:flex;
+    margin-bottom:20px;
+}
+
+.tabs button{
+    flex:1;
+    padding:12px;
+    border:none;
+    cursor:pointer;
+    background:#e5e7eb;
+    font-size:16px;
+}
+
+.tabs button.active{
+    background:#2563eb;
+    color:white;
+}
+
+.form{
+    display:none;
+}
+
+.form.active{
+    display:block;
+}
+
+.input-group{
+    margin-bottom:15px;
+}
+
+.input-group label{
+    display:block;
+    margin-bottom:5px;
+    font-weight:bold;
+}
+
+.input-group input{
+    width:100%;
+    padding:12px;
+    border:1px solid #ccc;
+    border-radius:8px;
+}
+
+.btn{
+    width:100%;
+    padding:12px;
+    border:none;
+    background:#2563eb;
+    color:white;
+    border-radius:8px;
+    cursor:pointer;
+    font-size:16px;
+}
+
+.btn:hover{
+    background:#1d4ed8;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+    <div class="left">
+        <h1>LedgerGuard</h1>
+        <p>Secure Billing & 
